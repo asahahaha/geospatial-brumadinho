@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brumadinho Dam Failure Timeline</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f8f1;
+            color: #333;
+        }
+        h1 {
+            margin-top: 20px;
+            font-size: 1.8em;
+            color: #2d572c;
+        }
+        h3 {
+            margin-top: 5px;
+            font-size: 1.2em;
+            color: #4b7948;
+        }
+        .image-container {
+            position: relative;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 600px;
+            border: 2px solid #2d572c;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .date-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(45, 87, 44, 0.8);
+            color: #fff;
+            font-size: 1em;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .slider-container {
+            margin: 40px auto;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+        .slider-container input[type="range"] {
+            width: 100%;
+            z-index: 2;
+            position: relative;
+            background: transparent;
+            appearance: none;
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #2d572c;
+            border-radius: 4px;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            background: #6abf69;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            cursor: pointer;
+            margin-top: -6px; /* Align thumb vertically */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .slider-container .slider-dots {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .slider-container .slider-dots div {
+            width: 14px;
+            height: 14px;
+            background-color: #3f843e;
+        
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(-50%);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Viewing the Sliding Monthly Change of Land Covers</h1>
+    <h3>Before & After the Brumadinho Dam Failure on January 25th, 2019</h3>
+    <div class="image-container">
+        <img id="image-display" src="" alt="Time Slider Image">
+        <div id="date-overlay" class="date-overlay">Loading...</div>
+    </div>
+    <div class="slider-container">
+        <div id="slider-dots" class="slider-dots"></div>
+        <input type="range" id="time-slider" min="0" max="100" step="1" value="0">
+    </div>
+
+    <script>
+        const slider = document.getElementById('time-slider');
+        const imageDisplay = document.getElementById('image-display');
+        const dateOverlay = document.getElementById('date-overlay');
+        const sliderDots = document.getElementById('slider-dots');
+        const folderPath = './2019-monthly-image/';
+
+        // List of images and corresponding dates
+        const images = [
+            { filename: "01-24.png", date: "2019-01-24" },
+            { filename: "02-01.png", date: "2019-02-01" },
+            { filename: "02-23.png", date: "2019-02-23" },
+            { filename: "03-30.png", date: "2019-03-30" },
+            { filename: "04-27.png", date: "2019-04-27" },
+            { filename: "05-26.png", date: "2019-05-26" },
+            { filename: "06-29.png", date: "2019-06-29" },
+            { filename: "07-29.png", date: "2019-07-29" },
+            { filename: "08-24.png", date: "2019-08-24" },
+            { filename: "09-13.png", date: "2019-09-13" },
+            { filename: "10-17.png", date: "2019-10-17" },
+            { filename: "11-06.png", date: "2019-11-06" },
+            { filename: "12-31.png", date: "2019-12-31" },
+        ];
+
+        // Helper function to format dates nicely (e.g., "Feb. 23rd, 2019")
+        function formatDate(dateStr) {
+            const date = new Date(`${dateStr}T12:00:00Z`); // Avoid timezone shifts
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            const day = date.getUTCDate();
+            const suffix = day % 10 === 1 && day !== 11 ? 'st'
+                : day % 10 === 2 && day !== 12 ? 'nd'
+                : day % 10 === 3 && day !== 13 ? 'rd'
+                : 'th';
+            return date.toLocaleDateString('en-US', options).replace(`${day}`, `${day}${suffix}`);
+        }
+
+        // Convert dates to timestamps for calculating proportional slider spacing
+        const timestamps = images.map(img => new Date(`${img.date}T12:00:00Z`).getTime());
+        const minTimestamp = Math.min(...timestamps);
+        const maxTimestamp = Math.max(...timestamps);
+        const range = maxTimestamp - minTimestamp;
+
+        // Map each date to a proportional slider value (0 to 100)
+        const sliderValues = images.map(img => {
+            const timestamp = new Date(`${img.date}T12:00:00Z`).getTime();
+            return Math.round(((timestamp - minTimestamp) / range) * 100);
+        });
+
+        // Populate the slider dots
+        function populateSliderDots() {
+            sliderDots.innerHTML = '';
+            sliderValues.forEach(value => {
+                const dot = document.createElement('div');
+                dot.style.left = `${value}%`;
+                sliderDots.appendChild(dot);
+            });
+        }
+
+        // Initialize the slider and display
+        function initializeSlider() {
+            populateSliderDots();
+            slider.value = sliderValues[0];
+            updateDisplay();
+            slider.addEventListener('input', updateDisplay);
+        }
+
+        // Find the closest date to the slider value
+        function findClosestIndex(value) {
+            return sliderValues.reduce((closestIdx, sliderVal, idx) => {
+                return Math.abs(value - sliderVal) < Math.abs(value - sliderValues[closestIdx]) ? idx : closestIdx;
+            }, 0);
+        }
+
+        // Update the displayed image and date
+        function updateDisplay() {
+            const value = parseInt(slider.value, 10);
+            const closestIdx = findClosestIndex(value);
+            const { filename, date } = images[closestIdx];
+            imageDisplay.src = folderPath + filename;
+            dateOverlay.textContent = formatDate(date);
+        }
+
+        // Initialize
+        initializeSlider();
+    </script>
+
+</body>
+
+<footer>
+    Spatial data collected from <a href="https://www.planet.com" target="_blank" style="color: #2d572c; text-decoration: none;">Planet.com</a>.
+</footer>
+
+</html>
