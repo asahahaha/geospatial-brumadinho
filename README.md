@@ -1,0 +1,1 @@
+# Geospatical Analysis on Brummadinho
