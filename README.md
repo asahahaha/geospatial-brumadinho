@@ -1,5 +1,6 @@
-# Geospatical Analysis on Brummadinho [Web Visualization](https://asahahaha.github.io/geospatial-brumadinho/)
+# Geospatical Analysis on Brummadinho Dam Disaster in 2019
 Project Report see [PDF](project.pdf).
+Simple interactive web visualization see [website](https://asahahaha.github.io/geospatial-brumadinho/).
 
 <div align="center" style="display: flex; justify-content: center; gap: 20px;">
   <a href="project.pdf">
